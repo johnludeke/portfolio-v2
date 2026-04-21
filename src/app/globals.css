@@ -1,26 +1,80 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Colors — vibrant palette */
+  --color-cBlack: #1d1e20;
+  --color-cPink: #e040fb;
+  --color-cGreen: #76e44a;
+  --color-cBlue: #22d3ee;
+  --color-cOrange: #ff6b2b;
+
+  /* Fonts */
+  --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-script: var(--font-dancing-script), cursive;
+  --font-mono: var(--font-source-code-pro), ui-monospace, monospace;
+
+  /* Box shadows */
+  --shadow-card: -5px 5px 0 0 #1d1e20;
+  --shadow-card-hover: -5px 5px 0 0 #22d3ee;
+  --shadow-card-pink: -5px 5px 0 0 #e040fb;
+  --shadow-card-green: -5px 5px 0 0 #76e44a;
+  --shadow-card-orange: -5px 5px 0 0 #ff6b2b;
+
+  /* Keyframes */
+  --animate-expand: expand 0.5s ease forwards;
+  --animate-collapse: collapse 0.5s ease forwards;
+  --animate-fade-up: fade-up 0.6s ease forwards;
+  --animate-fade-in: fade-in 0.4s ease forwards;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+@keyframes expand {
+  0% { max-height: 0; }
+  100% { max-height: 600px; }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@keyframes collapse {
+  0% { max-height: 600px; }
+  100% { max-height: 0; }
+}
+
+@keyframes fade-up {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes playing-bar {
+  10% { transform: scaleY(0.3); }
+  30% { transform: scaleY(1); }
+  60% { transform: scaleY(0.5); }
+  80% { transform: scaleY(0.75); }
+  100% { transform: scaleY(0.5); }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #ffffff;
+  color: #1d1e20;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.hljs {
+  background: #f4f4f5;
+  border-radius: 0.375rem;
+  padding: 1rem;
+  overflow-x: auto;
 }
