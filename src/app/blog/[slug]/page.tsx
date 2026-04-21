@@ -61,7 +61,7 @@ export default async function BlogPostPage({
   return (
     <>
       <Navbar />
-      <main className="min-h-screen pt-16">
+      <main className="min-h-screen pt-16 bg-white">
         <div className="mx-auto max-w-2xl px-6 pt-8">
           <Link href="/blog" className="text-sm text-zinc-400 hover:text-cBlack transition-colors font-mono">
             ← Blog

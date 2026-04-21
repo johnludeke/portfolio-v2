@@ -20,7 +20,7 @@ export default async function BlogPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen pt-24 pb-16">
+      <main className="min-h-screen pt-24 pb-16 bg-white">
         <div className="mx-auto max-w-5xl px-6">
           <div className="mb-10">
             <Link href="/" className="text-sm text-zinc-400 hover:text-cBlack transition-colors font-mono">
