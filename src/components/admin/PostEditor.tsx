@@ -4,6 +4,16 @@ import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { slugify } from "@/lib/utils";
+
+// Permissive version for live typing — preserves trailing dashes so you can type "my-post-"
+function sanitizeSlugInput(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/_/g, "-")
+    .replace(/-{2,}/g, "-");
+}
 import Input from "@/components/ui/Input";
 import Textarea from "@/components/ui/Textarea";
 import Toggle from "@/components/ui/Toggle";
@@ -102,7 +112,7 @@ export default function PostEditor({ post, allTags }: PostEditorProps) {
         <div className="flex gap-2 items-center">
           <input
             value={slug}
-            onChange={(e) => setSlug(slugify(e.target.value))}
+            onChange={(e) => setSlug(sanitizeSlugInput(e.target.value))}
             disabled={slugLocked}
             placeholder="post-url-slug"
             className="flex-1 border border-zinc-300 px-3 py-2 text-sm text-cBlack placeholder:text-zinc-400 focus:outline-none focus:border-cBlack transition-colors disabled:bg-zinc-50 disabled:text-zinc-400"
