@@ -1,7 +1,12 @@
 import Link from "next/link";
+import { getAllTags } from "@/lib/posts";
 import PostEditor from "@/components/admin/PostEditor";
+import type { Tag } from "@/lib/types";
 
-export default function NewPostPage() {
+export default async function NewPostPage() {
+  let allTags: Tag[] = [];
+  try { allTags = await getAllTags(); } catch {}
+
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
@@ -10,7 +15,7 @@ export default function NewPostPage() {
         </Link>
         <h1 className="mt-3 text-2xl font-bold text-cBlack">New Post</h1>
       </div>
-      <PostEditor />
+      <PostEditor allTags={allTags} />
     </div>
   );
 }

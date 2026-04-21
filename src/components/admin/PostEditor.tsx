@@ -9,16 +9,18 @@ import Textarea from "@/components/ui/Textarea";
 import Toggle from "@/components/ui/Toggle";
 import Button from "@/components/ui/Button";
 import ImageUpload from "./ImageUpload";
+import TagSelector from "./TagSelector";
 import MarkdownRenderer from "@/components/blog/MarkdownRenderer";
-import type { BlogPost } from "@/lib/types";
+import type { BlogPost, Tag } from "@/lib/types";
 
 const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
 
 interface PostEditorProps {
-  post?: BlogPost; // undefined = create mode
+  post?: BlogPost;
+  allTags: Tag[];
 }
 
-export default function PostEditor({ post }: PostEditorProps) {
+export default function PostEditor({ post, allTags }: PostEditorProps) {
   const router = useRouter();
   const isEdit = !!post;
 
@@ -29,8 +31,7 @@ export default function PostEditor({ post }: PostEditorProps) {
   const [thumbnail, setThumbnail] = useState(post?.thumbnail ?? "");
   const [excerpt, setExcerpt] = useState(post?.excerpt ?? "");
   const [content, setContent] = useState(post?.content ?? "");
-  const [youtubeUrl, setYoutubeUrl] = useState(post?.youtubeUrl ?? "");
-  const [spotifyUrl, setSpotifyUrl] = useState(post?.spotifyUrl ?? "");
+  const [selectedTags, setSelectedTags] = useState<Tag[]>(post?.tags ?? []);
   const [published, setPublished] = useState(post?.published ?? false);
 
   const [tab, setTab] = useState<"write" | "preview">("write");
@@ -38,14 +39,10 @@ export default function PostEditor({ post }: PostEditorProps) {
   const [error, setError] = useState("");
   const [previewHtml, setPreviewHtml] = useState("");
 
-  // Auto-generate slug from title (only if not locked and not in edit mode)
   useEffect(() => {
-    if (!slugLocked && !isEdit && title) {
-      setSlug(slugify(title));
-    }
+    if (!slugLocked && !isEdit && title) setSlug(slugify(title));
   }, [title, slugLocked, isEdit]);
 
-  // Generate preview HTML when switching to preview tab
   useEffect(() => {
     if (tab === "preview" && content) {
       import("@/lib/markdown")
@@ -54,7 +51,6 @@ export default function PostEditor({ post }: PostEditorProps) {
     }
   }, [tab, content]);
 
-  // Lock slug once published
   useEffect(() => {
     if (published && isEdit) setSlugLocked(true);
   }, [published, isEdit]);
@@ -67,15 +63,8 @@ export default function PostEditor({ post }: PostEditorProps) {
     setSaving(true);
     try {
       const body = {
-        title,
-        slug,
-        publishDate,
-        thumbnail,
-        excerpt,
-        content,
-        youtubeUrl: youtubeUrl || undefined,
-        spotifyUrl: spotifyUrl || undefined,
-        published,
+        title, slug, publishDate, thumbnail, excerpt, content, published,
+        tagIds: selectedTags.map((t) => t.id),
       };
 
       const url = isEdit ? `/api/posts/${post!.slug}` : "/api/posts";
@@ -101,7 +90,6 @@ export default function PostEditor({ post }: PostEditorProps) {
 
   return (
     <div className="space-y-6">
-      {/* Title */}
       <Input
         label="Title"
         value={title}
@@ -109,7 +97,6 @@ export default function PostEditor({ post }: PostEditorProps) {
         placeholder="Post title"
       />
 
-      {/* Slug */}
       <div className="flex flex-col gap-1">
         <label className="text-sm font-medium text-cBlack">Slug</label>
         <div className="flex gap-2 items-center">
@@ -134,15 +121,12 @@ export default function PostEditor({ post }: PostEditorProps) {
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        {/* Publish date */}
         <Input
           label="Publish Date"
           type="date"
           value={publishDate}
           onChange={(e) => setPublishDate(e.target.value)}
         />
-
-        {/* Published toggle */}
         <div className="flex flex-col gap-1 justify-end pb-0.5">
           <Toggle
             checked={published}
@@ -152,39 +136,24 @@ export default function PostEditor({ post }: PostEditorProps) {
         </div>
       </div>
 
-      {/* Thumbnail */}
       <ImageUpload value={thumbnail} onChange={setThumbnail} />
 
-      {/* Excerpt */}
       <Textarea
         label="Excerpt"
         value={excerpt}
         onChange={(e) => setExcerpt(e.target.value)}
         placeholder="Short preview text (shown on blog listing page)"
-        className="min-h-[80px]"
+        className="min-h-20"
       />
 
-      {/* Optional media */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Input
-          label="YouTube URL (optional)"
-          value={youtubeUrl}
-          onChange={(e) => setYoutubeUrl(e.target.value)}
-          placeholder="https://youtube.com/watch?v=..."
-        />
-        <Input
-          label="Spotify URL (optional)"
-          value={spotifyUrl}
-          onChange={(e) => setSpotifyUrl(e.target.value)}
-          placeholder="https://open.spotify.com/episode/..."
-        />
-      </div>
+      <TagSelector
+        allTags={allTags}
+        selected={selectedTags}
+        onChange={setSelectedTags}
+      />
 
-      {/* Markdown editor */}
       <div className="flex flex-col gap-1">
         <span className="text-sm font-medium text-cBlack">Content</span>
-
-        {/* Write / Preview tabs */}
         <div className="flex border-b border-zinc-200 mb-0">
           {(["write", "preview"] as const).map((t) => (
             <button
@@ -213,7 +182,7 @@ export default function PostEditor({ post }: PostEditorProps) {
             />
           </div>
         ) : (
-          <div className="min-h-[400px] border border-zinc-200 p-6 bg-white">
+          <div className="min-h-100 border border-zinc-200 p-6 bg-white">
             {content ? (
               <MarkdownRenderer html={previewHtml} />
             ) : (
@@ -223,10 +192,8 @@ export default function PostEditor({ post }: PostEditorProps) {
         )}
       </div>
 
-      {/* Error */}
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      {/* Actions */}
       <div className="flex gap-3 pt-2">
         <Button onClick={handleSave} loading={saving}>
           {isEdit ? "Save Changes" : "Create Post"}

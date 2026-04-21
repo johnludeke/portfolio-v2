@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
 import { authOptions } from "@/lib/auth";
-import { getPostBySlug, updatePost, deletePost } from "@/lib/posts";
+import { getPostBySlug, updatePost, deletePost, setPostTags } from "@/lib/posts";
 
 export async function GET(
   _req: NextRequest,
@@ -31,7 +31,10 @@ export async function PUT(
 
   try {
     const body = await req.json();
-    const post = await updatePost(slug, body);
+    const { tagIds, ...postFields } = body;
+    const post = await updatePost(slug, postFields);
+
+    if (tagIds !== undefined) await setPostTags(post.id, tagIds ?? []);
 
     revalidatePath("/blog");
     revalidatePath(`/blog/${post.slug}`);

@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { getPublishedPosts } from "@/lib/posts";
+import { getPublishedPosts, getAllTags } from "@/lib/posts";
 import BlogList from "@/components/blog/BlogList";
 import Navbar from "@/components/layout/Navbar";
-import type { BlogPost } from "@/lib/types";
+import type { BlogPost, Tag } from "@/lib/types";
 
 export const metadata = {
   title: "Blog — John Doe",
@@ -11,8 +11,9 @@ export const metadata = {
 
 export default async function BlogPage() {
   let posts: BlogPost[] = [];
+  let tags: Tag[] = [];
   try {
-    posts = await getPublishedPosts();
+    [posts, tags] = await Promise.all([getPublishedPosts(), getAllTags()]);
   } catch {
     // Supabase not configured yet — show empty state
   }
@@ -29,7 +30,7 @@ export default async function BlogPage() {
             <h1 className="mt-4 text-4xl font-bold text-cBlack">Blog</h1>
             <div className="mt-2 h-1 w-12 bg-cBlue" />
           </div>
-          <BlogList posts={posts} />
+          <BlogList posts={posts} tags={tags} />
         </div>
       </main>
     </>

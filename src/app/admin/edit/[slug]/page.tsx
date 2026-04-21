@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getPostBySlug } from "@/lib/posts";
+import { getPostBySlug, getAllTags } from "@/lib/posts";
 import PostEditor from "@/components/admin/PostEditor";
 
 export const dynamic = "force-dynamic";
@@ -13,8 +13,9 @@ export default async function EditPostPage({
   const { slug } = await params;
 
   let post = null;
+  let allTags = [];
   try {
-    post = await getPostBySlug(slug);
+    [post, allTags] = await Promise.all([getPostBySlug(slug), getAllTags()]);
   } catch {
     notFound();
   }
@@ -30,7 +31,7 @@ export default async function EditPostPage({
         <h1 className="mt-3 text-2xl font-bold text-cBlack">Edit Post</h1>
         <p className="text-sm text-zinc-400 font-mono mt-0.5">/blog/{post.slug}</p>
       </div>
-      <PostEditor post={post} />
+      <PostEditor post={post} allTags={allTags} />
     </div>
   );
 }

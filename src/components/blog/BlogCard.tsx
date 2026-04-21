@@ -31,8 +31,7 @@ export default function BlogCard({ post }: BlogCardProps) {
 
       {/* Content */}
       <div className="p-5 space-y-2">
-        {/* Date — fall back to createdAt if publishDate not set */}
-        <time className="block text-sm font-semibold text-cOrange font-mono">
+        <time className="block text-xs font-mono text-zinc-400">
           {formatDate(post.publishDate || post.createdAt)}
         </time>
 
@@ -44,19 +43,16 @@ export default function BlogCard({ post }: BlogCardProps) {
           <p className="text-sm text-zinc-500 line-clamp-2">{post.excerpt}</p>
         )}
 
-        {/* Media badges */}
-        {(post.youtubeUrl || post.spotifyUrl) && (
-          <div className="flex gap-2 pt-1">
-            {post.youtubeUrl && (
-              <span className="text-xs border border-red-200 text-red-500 px-1.5 py-0.5">
-                Video
+        {post.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            {post.tags.map((tag) => (
+              <span
+                key={tag.id}
+                className="text-xs font-mono border border-zinc-300 text-zinc-500 px-1.5 py-0.5"
+              >
+                {tag.name}
               </span>
-            )}
-            {post.spotifyUrl && (
-              <span className="text-xs border border-green-200 text-green-600 px-1.5 py-0.5">
-                Podcast
-              </span>
-            )}
+            ))}
           </div>
         )}
       </div>

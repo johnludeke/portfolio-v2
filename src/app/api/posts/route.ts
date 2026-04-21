@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getAllPosts, getPublishedPosts, createPost } from "@/lib/posts";
+import { getAllPosts, getPublishedPosts, createPost, setPostTags } from "@/lib/posts";
 import { slugify } from "@/lib/utils";
 
 export async function GET() {
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { title, slug, publishDate, thumbnail, excerpt, content, youtubeUrl, spotifyUrl, published } = body;
+    const { title, slug, publishDate, thumbnail, excerpt, content, published, tagIds } = body;
 
     if (!title || !slug) {
       return NextResponse.json({ error: "title and slug are required" }, { status: 400 });
@@ -33,10 +33,10 @@ export async function POST(req: NextRequest) {
       thumbnail: thumbnail ?? "",
       excerpt: excerpt ?? "",
       content: content ?? "",
-      youtubeUrl: youtubeUrl ?? undefined,
-      spotifyUrl: spotifyUrl ?? undefined,
       published: published ?? false,
     });
+
+    if (tagIds?.length) await setPostTags(post.id, tagIds);
 
     return NextResponse.json({ post }, { status: 201 });
   } catch (err) {
