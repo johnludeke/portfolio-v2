@@ -84,7 +84,8 @@ export async function updatePost(
 
   if (input.title !== undefined) updateData.title = input.title;
   if (input.slug !== undefined) updateData.slug = input.slug;
-  if (input.publishDate !== undefined) updateData.publish_date = input.publishDate || null;
+  if (input.publishDate) updateData.publish_date = input.publishDate;
+  else if (input.publishDate === null) updateData.publish_date = null;
   if (input.thumbnail !== undefined) updateData.thumbnail = input.thumbnail;
   if (input.excerpt !== undefined) updateData.excerpt = input.excerpt;
   if (input.content !== undefined) updateData.content = input.content;
