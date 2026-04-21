@@ -16,11 +16,13 @@ const sourceCodePro = Source_Code_Pro({
 });
 
 export const metadata: Metadata = {
-  title: "John Doe — Portfolio",
-  description: "Software engineer portfolio featuring projects, experience, and blog.",
+  title: "John Ludeke",
+  description:
+    "Software engineer portfolio featuring projects, experience, and blog.",
   openGraph: {
-    title: "John Doe — Portfolio",
-    description: "Software engineer portfolio featuring projects, experience, and blog.",
+    title: "John Ludeke",
+    description:
+      "Software engineer portfolio featuring projects, experience, and blog.",
     type: "website",
   },
 };
@@ -31,7 +33,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${dancingScript.variable} ${sourceCodePro.variable}`}>
+    <html
+      lang="en"
+      className={`${dancingScript.variable} ${sourceCodePro.variable}`}
+    >
       <body>
         <CursorTrail />
         {children}
