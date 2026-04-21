@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { revalidatePath } from "next/cache";
 import { authOptions } from "@/lib/auth";
 import { getAllPosts, getPublishedPosts, createPost, setPostTags } from "@/lib/posts";
 import { slugify } from "@/lib/utils";
@@ -37,6 +38,8 @@ export async function POST(req: NextRequest) {
     });
 
     if (tagIds?.length) await setPostTags(post.id, tagIds);
+
+    revalidatePath("/blog");
 
     return NextResponse.json({ post }, { status: 201 });
   } catch (err) {
