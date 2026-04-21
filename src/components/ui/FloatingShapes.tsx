@@ -63,11 +63,25 @@ export default function FloatingShapes({ shapes }: FloatingShapesProps) {
   const rafId = useRef<number>(0);
 
   useEffect(() => {
+    const isTouchDevice = window.matchMedia("(pointer: coarse)").matches;
+
     const onMove = (e: MouseEvent) => {
       mouse.current.x = e.clientX / window.innerWidth;
       mouse.current.y = e.clientY / window.innerHeight;
     };
-    window.addEventListener("mousemove", onMove);
+
+    const onScroll = () => {
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      mouse.current.y = maxScroll > 0 ? window.scrollY / maxScroll : 0.5;
+      mouse.current.x = 0.5;
+    };
+
+    if (isTouchDevice) {
+      onScroll(); // set initial position
+      window.addEventListener("scroll", onScroll, { passive: true });
+    } else {
+      window.addEventListener("mousemove", onMove);
+    }
 
     const animate = () => {
       frame.current += 0.012;
@@ -108,7 +122,11 @@ export default function FloatingShapes({ shapes }: FloatingShapesProps) {
     if (containerRef.current) observer.observe(containerRef.current);
 
     return () => {
-      window.removeEventListener("mousemove", onMove);
+      if (isTouchDevice) {
+        window.removeEventListener("scroll", onScroll);
+      } else {
+        window.removeEventListener("mousemove", onMove);
+      }
       cancelAnimationFrame(rafId.current);
       observer.disconnect();
     };

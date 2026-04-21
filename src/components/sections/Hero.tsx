@@ -154,7 +154,7 @@ export default function Hero() {
           John Ludeke
         </h1>
         <p className="mt-4 text-lg md:text-xl text-zinc-500 max-w-md mx-auto">
-          Software engineer building thoughtful digital products.
+          Software engineer at the intersection of HFT and UX.
         </p>
         <div className="mt-8 flex items-center justify-center gap-4">
           <a
