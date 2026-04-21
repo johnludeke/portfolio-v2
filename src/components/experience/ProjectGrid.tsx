@@ -8,7 +8,7 @@ const PROJECTS: Project[] = [
     stack: ["Next.js", "TypeScript", "Tailwind CSS", "Supabase"],
     description:
       "This site. A personal portfolio and blog built with Next.js App Router, Tailwind CSS v4, and Supabase. Features an admin interface secured with Google OAuth and a GitHub-style markdown editor for writing blog posts.",
-    link: "https://github.com",
+    link: "https://github.com/johnludeke/portfolio-v2",
   },
 ];
 
