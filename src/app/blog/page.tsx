@@ -5,7 +5,7 @@ import Navbar from "@/components/layout/Navbar";
 import type { BlogPost, Tag } from "@/lib/types";
 
 export const metadata = {
-  title: "Blog — John Doe",
+  title: "Blog — John Ludeke",
   description: "Thoughts on software engineering, projects, and more.",
 };
 
