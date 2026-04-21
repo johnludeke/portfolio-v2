@@ -25,7 +25,7 @@ export default function Navbar() {
     <header
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-        scrolled ? "bg-white/95 backdrop-blur-sm shadow-sm" : "bg-transparent"
+        scrolled ? "bg-white/95 backdrop-blur-sm shadow-sm" : "bg-transparent",
       )}
     >
       <div className="mx-auto max-w-5xl px-6 h-16 flex items-center justify-between">
@@ -34,7 +34,7 @@ export default function Navbar() {
           href="/#hero"
           className="font-bold text-lg text-cBlack hover:opacity-70 transition-opacity"
         >
-          JD
+          JL
         </a>
 
         {/* Desktop nav */}
@@ -47,14 +47,14 @@ export default function Navbar() {
                 href={href}
                 className={cn(
                   "relative text-sm font-medium transition-colors group",
-                  isActive ? "text-cBlack" : "text-zinc-500 hover:text-cBlack"
+                  isActive ? "text-cBlack" : "text-zinc-500 hover:text-cBlack",
                 )}
               >
                 {label}
                 <span
                   className={cn(
                     "absolute -bottom-0.5 left-0 h-px bg-cBlack transition-all duration-200",
-                    isActive ? "w-full" : "w-0 group-hover:w-full"
+                    isActive ? "w-full" : "w-0 group-hover:w-full",
                   )}
                 />
               </a>
