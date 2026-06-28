@@ -40,13 +40,14 @@ World Cup competition, code `WC`, is on the free tier).
 
 ### 3. Cron
 
-[`vercel.json`](./vercel.json) registers an hourly call to `/api/trouble/sync`.
-Vercel automatically sends `Authorization: Bearer $CRON_SECRET`.
+[`vercel.json`](./vercel.json) registers a daily call to `/api/trouble/sync`
+(08:00 UTC). Vercel automatically sends `Authorization: Bearer $CRON_SECRET`.
 
-> **Note:** the Vercel Hobby plan runs crons only once per day. If you're on
-> Hobby, either upgrade for more frequent syncing, or just use the **Sync from
-> football-data.org** button under *Owner tools* on the page (visible/working
-> only when you're signed in to `/admin` with Google).
+> **Note:** the schedule is daily because the Vercel Hobby plan only allows
+> one cron run per day (more frequent schedules fail the build). On match days,
+> use the **Sync from football-data.org** button under *Owner tools* (visible/
+> working only when you're signed in to `/admin`) to update scores immediately.
+> If you upgrade to Pro, you can bump the schedule to e.g. `0 * * * *` (hourly).
 
 ### 4. Arrange the bracket + set the deadline
 
