@@ -1,0 +1,131 @@
+"use client";
+
+import { cn } from "@/lib/utils";
+import {
+  ROUNDS,
+  buildBracket,
+  type Picks,
+  type RoundKey,
+  type Team,
+} from "@/lib/wc-bracket";
+import type { MatchRow } from "@/lib/trouble";
+
+type Fixture = { home: Team | null; away: Team | null };
+
+interface BracketProps {
+  r32: Fixture[];
+  picks: Picks;
+  matches?: MatchRow[]; // when provided, correct picks are highlighted
+  editable?: boolean;
+  onPick?: (round: RoundKey, index: number, tla: string) => void;
+}
+
+// Teams that actually won, per round — used to mark correct picks green.
+function winnersByRound(matches: MatchRow[] = []): Record<string, Set<string>> {
+  const out: Record<string, Set<string>> = {};
+  for (const r of ROUNDS) out[r.key] = new Set();
+  for (const m of matches) if (m.winner_tla) out[m.round]?.add(m.winner_tla);
+  return out;
+}
+
+function TeamRow({
+  team,
+  picked,
+  hit,
+  played,
+  clickable,
+  onClick,
+}: {
+  team: Team | null;
+  picked: boolean;
+  hit: boolean;
+  played: boolean;
+  clickable: boolean;
+  onClick?: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={!clickable || !team}
+      onClick={onClick}
+      className={cn(
+        "flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs transition-colors",
+        clickable && team && "cursor-pointer hover:bg-zinc-100",
+        picked && !played && "bg-cBlue/20 font-semibold",
+        picked && played && hit && "bg-cGreen/30 font-semibold",
+        picked && played && !hit && "bg-red-100 font-semibold line-through",
+        !team && "opacity-40"
+      )}
+    >
+      {team?.crest ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={team.crest} alt="" className="h-4 w-4 shrink-0 object-contain" />
+      ) : (
+        <span className="h-4 w-4 shrink-0 rounded-sm bg-zinc-200" />
+      )}
+      <span className="truncate">{team ? team.name : "—"}</span>
+      {team && <span className="ml-auto text-[10px] text-zinc-400">{team.tla}</span>}
+    </button>
+  );
+}
+
+export default function Bracket({ r32, picks, matches, editable, onPick }: BracketProps) {
+  const bracket = buildBracket(r32, picks);
+  const winners = winnersByRound(matches);
+
+  return (
+    <div className="overflow-x-auto pb-4">
+      <div className="flex gap-4" style={{ minWidth: "max-content" }}>
+        {ROUNDS.map((round) => {
+          const roundWinners = winners[round.key];
+          const roundPlayed = roundWinners.size > 0;
+          return (
+            <div key={round.key} className="flex w-44 shrink-0 flex-col gap-3">
+              <div className="sticky top-0 text-center">
+                <p className="text-xs font-bold uppercase tracking-wide text-cBlack">
+                  {round.label}
+                </p>
+                <p className="text-[10px] text-zinc-400">{round.points} pts each</p>
+              </div>
+              <div
+                className="flex flex-1 flex-col justify-around gap-2"
+              >
+                {bracket[round.key].map((slot) => {
+                  const homePicked = slot.pick != null && slot.home?.tla === slot.pick;
+                  const awayPicked = slot.pick != null && slot.away?.tla === slot.pick;
+                  return (
+                    <div
+                      key={slot.key}
+                      className="border border-zinc-300 bg-white divide-y divide-zinc-200"
+                    >
+                      <TeamRow
+                        team={slot.home}
+                        picked={homePicked}
+                        hit={homePicked && roundWinners.has(slot.home!.tla)}
+                        played={roundPlayed}
+                        clickable={Boolean(editable)}
+                        onClick={() =>
+                          slot.home && onPick?.(round.key, slot.index, slot.home.tla)
+                        }
+                      />
+                      <TeamRow
+                        team={slot.away}
+                        picked={awayPicked}
+                        hit={awayPicked && roundWinners.has(slot.away!.tla)}
+                        played={roundPlayed}
+                        clickable={Boolean(editable)}
+                        onClick={() =>
+                          slot.away && onPick?.(round.key, slot.index, slot.away.tla)
+                        }
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
