@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   ROUNDS,
@@ -21,9 +22,55 @@ interface BracketProps {
   captureRef?: React.Ref<HTMLDivElement>; // points at the full-width inner node for JPG export
 }
 
-// Serve crests through our same-origin proxy so they survive JPG export.
-function crestSrc(url?: string): string | undefined {
-  return url ? `/api/trouble/crest?u=${encodeURIComponent(url)}` : undefined;
+// Crests are pre-loaded into data URLs (via our same-origin proxy) so each
+// <img> carries its own isolated image. This avoids html-to-image's image
+// cache collapsing every (SVG) crest to the first one in the JPG export.
+const crestCache = new Map<string, string>();
+
+function proxyUrl(url: string): string {
+  return `/api/trouble/crest?u=${encodeURIComponent(url)}`;
+}
+
+function useCrestData(urls: string[]): number {
+  const [version, setVersion] = useState(0);
+  const key = urls.join("|");
+
+  useEffect(() => {
+    let active = true;
+    const missing = urls.filter((u) => u && !crestCache.has(u));
+    if (missing.length === 0) return;
+
+    Promise.all(
+      missing.map(async (u) => {
+        try {
+          const res = await fetch(proxyUrl(u));
+          if (!res.ok) return;
+          const blob = await res.blob();
+          const dataUrl = await new Promise<string>((resolve, reject) => {
+            const fr = new FileReader();
+            fr.onload = () => resolve(fr.result as string);
+            fr.onerror = reject;
+            fr.readAsDataURL(blob);
+          });
+          crestCache.set(u, dataUrl);
+        } catch {
+          /* leave uncached; falls back to proxy URL on screen */
+        }
+      })
+    ).then(() => active && setVersion((v) => v + 1));
+
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+
+  return version;
+}
+
+function resolveCrest(url?: string): string | undefined {
+  if (!url) return undefined;
+  return crestCache.get(url) ?? proxyUrl(url);
 }
 
 // Teams that actually won, per round — used to mark correct picks green.
@@ -65,7 +112,7 @@ function TeamRow({
     >
       {team?.crest ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={crestSrc(team.crest)} alt="" className="h-4 w-4 shrink-0 object-contain" />
+        <img src={resolveCrest(team.crest)} alt="" className="h-4 w-4 shrink-0 object-contain" />
       ) : (
         <span className="h-4 w-4 shrink-0 rounded-sm bg-zinc-200" />
       )}
@@ -79,9 +126,17 @@ export default function Bracket({ r32, picks, matches, editable, onPick, capture
   const bracket = buildBracket(r32, picks);
   const winners = winnersByRound(matches);
 
+  // Pre-load every crest into a data URL so the JPG export renders them all.
+  const crestUrls = Array.from(
+    new Set(
+      r32.flatMap((m) => [m.home?.crest, m.away?.crest]).filter(Boolean) as string[]
+    )
+  );
+  useCrestData(crestUrls);
+
   return (
     <div className="overflow-x-auto pb-4">
-      <div ref={captureRef} className="flex gap-4 bg-white" style={{ minWidth: "max-content" }}>
+      <div ref={captureRef} className="flex gap-4 bg-white p-4" style={{ minWidth: "max-content" }}>
         {ROUNDS.map((round) => {
           const roundWinners = winners[round.key];
           const roundPlayed = roundWinners.size > 0;

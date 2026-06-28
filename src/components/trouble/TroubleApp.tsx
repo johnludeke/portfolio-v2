@@ -139,7 +139,8 @@ export default function TroubleApp() {
         quality: 0.95,
         pixelRatio: 2,
         backgroundColor: "#ffffff",
-        style: { padding: "16px" },
+        width: node.scrollWidth,
+        height: node.scrollHeight,
         cacheBust: true,
         // Cross-origin crests that block CORS fall back to a transparent pixel
         // instead of failing the whole export.
