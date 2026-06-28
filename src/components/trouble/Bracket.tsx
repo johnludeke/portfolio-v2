@@ -73,26 +73,40 @@ function resolveCrest(url?: string): string | undefined {
   return crestCache.get(url) ?? proxyUrl(url);
 }
 
-// Teams that actually won, per round — used to mark correct picks green.
-function winnersByRound(matches: MatchRow[] = []): Record<string, Set<string>> {
-  const out: Record<string, Set<string>> = {};
-  for (const r of ROUNDS) out[r.key] = new Set();
-  for (const m of matches) if (m.winner_tla) out[m.round]?.add(m.winner_tla);
-  return out;
+// Per round, the teams that won and the teams whose match is decided (both the
+// winner and the loser of any finished match). A pick is only marked
+// correct/incorrect once that specific team's match has actually been played.
+function resultsByRound(matches: MatchRow[] = []): {
+  winners: Record<string, Set<string>>;
+  decided: Record<string, Set<string>>;
+} {
+  const winners: Record<string, Set<string>> = {};
+  const decided: Record<string, Set<string>> = {};
+  for (const r of ROUNDS) {
+    winners[r.key] = new Set();
+    decided[r.key] = new Set();
+  }
+  for (const m of matches) {
+    if (!m.winner_tla) continue;
+    winners[m.round]?.add(m.winner_tla);
+    if (m.home?.tla) decided[m.round]?.add(m.home.tla);
+    if (m.away?.tla) decided[m.round]?.add(m.away.tla);
+  }
+  return { winners, decided };
 }
 
 function TeamRow({
   team,
   picked,
-  hit,
-  played,
+  won,
+  lost,
   clickable,
   onClick,
 }: {
   team: Team | null;
   picked: boolean;
-  hit: boolean;
-  played: boolean;
+  won: boolean;
+  lost: boolean;
   clickable: boolean;
   onClick?: () => void;
 }) {
@@ -104,9 +118,9 @@ function TeamRow({
       className={cn(
         "flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs transition-colors",
         clickable && team && "cursor-pointer hover:bg-zinc-100",
-        picked && !played && "bg-cBlue/20 font-semibold",
-        picked && played && hit && "bg-cGreen/30 font-semibold",
-        picked && played && !hit && "bg-red-100 font-semibold line-through",
+        picked && !won && !lost && "bg-cBlue/20 font-semibold",
+        won && "bg-cGreen/30 font-semibold",
+        lost && "bg-red-100 font-semibold line-through",
         !team && "opacity-40"
       )}
     >
@@ -124,7 +138,7 @@ function TeamRow({
 
 export default function Bracket({ r32, picks, matches, editable, onPick, captureRef }: BracketProps) {
   const bracket = buildBracket(r32, picks);
-  const winners = winnersByRound(matches);
+  const { winners, decided } = resultsByRound(matches);
 
   // Pre-load every crest into a data URL so the JPG export renders them all.
   const crestUrls = Array.from(
@@ -139,7 +153,7 @@ export default function Bracket({ r32, picks, matches, editable, onPick, capture
       <div ref={captureRef} className="flex gap-4 bg-white p-4" style={{ minWidth: "max-content" }}>
         {ROUNDS.map((round) => {
           const roundWinners = winners[round.key];
-          const roundPlayed = roundWinners.size > 0;
+          const roundDecided = decided[round.key];
           return (
             <div key={round.key} className="flex w-44 shrink-0 flex-col gap-3">
               <div className="sticky top-0 text-center">
@@ -162,8 +176,13 @@ export default function Bracket({ r32, picks, matches, editable, onPick, capture
                       <TeamRow
                         team={slot.home}
                         picked={homePicked}
-                        hit={homePicked && roundWinners.has(slot.home!.tla)}
-                        played={roundPlayed}
+                        won={homePicked && !!slot.home && roundWinners.has(slot.home.tla)}
+                        lost={
+                          homePicked &&
+                          !!slot.home &&
+                          roundDecided.has(slot.home.tla) &&
+                          !roundWinners.has(slot.home.tla)
+                        }
                         clickable={Boolean(editable)}
                         onClick={() =>
                           slot.home && onPick?.(round.key, slot.index, slot.home.tla)
@@ -172,8 +191,13 @@ export default function Bracket({ r32, picks, matches, editable, onPick, capture
                       <TeamRow
                         team={slot.away}
                         picked={awayPicked}
-                        hit={awayPicked && roundWinners.has(slot.away!.tla)}
-                        played={roundPlayed}
+                        won={awayPicked && !!slot.away && roundWinners.has(slot.away.tla)}
+                        lost={
+                          awayPicked &&
+                          !!slot.away &&
+                          roundDecided.has(slot.away.tla) &&
+                          !roundWinners.has(slot.away.tla)
+                        }
                         clickable={Boolean(editable)}
                         onClick={() =>
                           slot.away && onPick?.(round.key, slot.index, slot.away.tla)

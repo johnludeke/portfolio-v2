@@ -84,25 +84,24 @@ export async function syncWorldCup(): Promise<SyncResult> {
   const body = (await res.json()) as { matches?: ApiMatch[] };
   const all = body.matches ?? [];
 
-  // Keep only knockout matches we care about.
-  const knockout = all.filter((m) => STAGE_MAP[m.stage]);
+  // Keep only knockout matches we care about, in a stable order so that any
+  // brand-new matches get sensible default `ord` values (chronological).
+  const knockout = all
+    .filter((m) => STAGE_MAP[m.stage])
+    .sort((a, b) => a.utcDate.localeCompare(b.utcDate) || a.id - b.id);
 
-  // Order within each round by kickoff for a stable `ord` (R32 editor seed order).
-  const ordCounter: Record<string, number> = {};
-  const byRound = new Map<RoundKey, ApiMatch[]>();
-  for (const m of knockout) {
-    const r = STAGE_MAP[m.stage];
-    if (!byRound.has(r)) byRound.set(r, []);
-    byRound.get(r)!.push(m);
-  }
-  for (const list of byRound.values()) {
-    list.sort((a, b) => a.utcDate.localeCompare(b.utcDate) || a.id - b.id);
-  }
-
-  // Existing rows so we don't clobber manual overrides with empty API data.
+  // Existing rows: used to preserve manual result overrides AND the manually
+  // arranged `ord` (bracket position). Sync must never reshuffle the bracket.
   const existing = await getMatches();
   const byApiId = new Map<number, MatchRow>();
   for (const e of existing) if (e.api_id != null) byApiId.set(e.api_id, e);
+
+  // Seed per-round ord counters past the highest existing ord so new matches
+  // never collide with positions the owner already arranged.
+  const ordCounter: Record<string, number> = {};
+  for (const e of existing) {
+    ordCounter[e.round] = Math.max(ordCounter[e.round] ?? -1, e.ord);
+  }
 
   let finished = 0;
   const rows = knockout.map((m) => {
@@ -123,9 +122,14 @@ export async function syncWorldCup(): Promise<SyncResult> {
       awayScore = prev.away_score;
     }
 
-    const ordKey = `${round}`;
-    const ord = ordCounter[ordKey] ?? 0;
-    ordCounter[ordKey] = ord + 1;
+    // Keep the existing bracket position; only assign one to new matches.
+    let ord: number;
+    if (prev) {
+      ord = prev.ord;
+    } else {
+      ordCounter[round] = (ordCounter[round] ?? -1) + 1;
+      ord = ordCounter[round];
+    }
 
     return {
       api_id: m.id,
