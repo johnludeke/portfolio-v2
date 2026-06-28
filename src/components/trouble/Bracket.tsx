@@ -73,26 +73,26 @@ function resolveCrest(url?: string): string | undefined {
   return crestCache.get(url) ?? proxyUrl(url);
 }
 
-// Per round, the teams that won and the teams whose match is decided (both the
-// winner and the loser of any finished match). A pick is only marked
-// correct/incorrect once that specific team's match has actually been played.
+// Per-round winners, plus the set of teams that have been eliminated (lost any
+// decided match). A pick is green once the team wins that round's match; it's
+// crossed out everywhere the moment that team is knocked out — including the
+// later rounds the player had advanced them to.
 function resultsByRound(matches: MatchRow[] = []): {
   winners: Record<string, Set<string>>;
-  decided: Record<string, Set<string>>;
+  eliminated: Set<string>;
 } {
   const winners: Record<string, Set<string>> = {};
-  const decided: Record<string, Set<string>> = {};
-  for (const r of ROUNDS) {
-    winners[r.key] = new Set();
-    decided[r.key] = new Set();
-  }
+  for (const r of ROUNDS) winners[r.key] = new Set();
+  const eliminated = new Set<string>();
+
   for (const m of matches) {
     if (!m.winner_tla) continue;
     winners[m.round]?.add(m.winner_tla);
-    if (m.home?.tla) decided[m.round]?.add(m.home.tla);
-    if (m.away?.tla) decided[m.round]?.add(m.away.tla);
+    // The team in the match that didn't win is out of the tournament.
+    if (m.home?.tla && m.home.tla !== m.winner_tla) eliminated.add(m.home.tla);
+    if (m.away?.tla && m.away.tla !== m.winner_tla) eliminated.add(m.away.tla);
   }
-  return { winners, decided };
+  return { winners, eliminated };
 }
 
 function TeamRow({
@@ -138,7 +138,7 @@ function TeamRow({
 
 export default function Bracket({ r32, picks, matches, editable, onPick, captureRef }: BracketProps) {
   const bracket = buildBracket(r32, picks);
-  const { winners, decided } = resultsByRound(matches);
+  const { winners, eliminated } = resultsByRound(matches);
 
   // Pre-load every crest into a data URL so the JPG export renders them all.
   const crestUrls = Array.from(
@@ -153,7 +153,6 @@ export default function Bracket({ r32, picks, matches, editable, onPick, capture
       <div ref={captureRef} className="flex gap-4 bg-white p-4" style={{ minWidth: "max-content" }}>
         {ROUNDS.map((round) => {
           const roundWinners = winners[round.key];
-          const roundDecided = decided[round.key];
           return (
             <div key={round.key} className="flex w-44 shrink-0 flex-col gap-3">
               <div className="sticky top-0 text-center">
@@ -180,8 +179,8 @@ export default function Bracket({ r32, picks, matches, editable, onPick, capture
                         lost={
                           homePicked &&
                           !!slot.home &&
-                          roundDecided.has(slot.home.tla) &&
-                          !roundWinners.has(slot.home.tla)
+                          !roundWinners.has(slot.home.tla) &&
+                          eliminated.has(slot.home.tla)
                         }
                         clickable={Boolean(editable)}
                         onClick={() =>
@@ -195,8 +194,8 @@ export default function Bracket({ r32, picks, matches, editable, onPick, capture
                         lost={
                           awayPicked &&
                           !!slot.away &&
-                          roundDecided.has(slot.away.tla) &&
-                          !roundWinners.has(slot.away.tla)
+                          !roundWinners.has(slot.away.tla) &&
+                          eliminated.has(slot.away.tla)
                         }
                         clickable={Boolean(editable)}
                         onClick={() =>
