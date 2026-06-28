@@ -21,6 +21,11 @@ interface BracketProps {
   captureRef?: React.Ref<HTMLDivElement>; // points at the full-width inner node for JPG export
 }
 
+// Serve crests through our same-origin proxy so they survive JPG export.
+function crestSrc(url?: string): string | undefined {
+  return url ? `/api/trouble/crest?u=${encodeURIComponent(url)}` : undefined;
+}
+
 // Teams that actually won, per round — used to mark correct picks green.
 function winnersByRound(matches: MatchRow[] = []): Record<string, Set<string>> {
   const out: Record<string, Set<string>> = {};
@@ -60,7 +65,7 @@ function TeamRow({
     >
       {team?.crest ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={team.crest} alt="" className="h-4 w-4 shrink-0 object-contain" />
+        <img src={crestSrc(team.crest)} alt="" className="h-4 w-4 shrink-0 object-contain" />
       ) : (
         <span className="h-4 w-4 shrink-0 rounded-sm bg-zinc-200" />
       )}
