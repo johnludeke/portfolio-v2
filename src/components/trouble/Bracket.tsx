@@ -18,6 +18,7 @@ interface BracketProps {
   matches?: MatchRow[]; // when provided, correct picks are highlighted
   editable?: boolean;
   onPick?: (round: RoundKey, index: number, tla: string) => void;
+  captureRef?: React.Ref<HTMLDivElement>; // points at the full-width inner node for JPG export
 }
 
 // Teams that actually won, per round — used to mark correct picks green.
@@ -69,13 +70,13 @@ function TeamRow({
   );
 }
 
-export default function Bracket({ r32, picks, matches, editable, onPick }: BracketProps) {
+export default function Bracket({ r32, picks, matches, editable, onPick, captureRef }: BracketProps) {
   const bracket = buildBracket(r32, picks);
   const winners = winnersByRound(matches);
 
   return (
     <div className="overflow-x-auto pb-4">
-      <div className="flex gap-4" style={{ minWidth: "max-content" }}>
+      <div ref={captureRef} className="flex gap-4 bg-white" style={{ minWidth: "max-content" }}>
         {ROUNDS.map((round) => {
           const roundWinners = winners[round.key];
           const roundPlayed = roundWinners.size > 0;

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { hasGate } from "@/lib/trouble-server";
+import { hasGate, isAdmin } from "@/lib/trouble-server";
 import {
   getMeta,
   getMatches,
@@ -19,10 +19,11 @@ export async function GET() {
   }
 
   try {
-    const [meta, matches, players] = await Promise.all([
+    const [meta, matches, players, admin] = await Promise.all([
       getMeta(),
       getMatches(),
       getAllPlayers(),
+      isAdmin(),
     ]);
 
     const finalGoals = finalTotalGoals(matches);
@@ -35,6 +36,7 @@ export async function GET() {
       players: leaderboard(publicPlayers, finalGoals),
       actualFinalGoals: finalGoals,
       maxScore: MAX_SCORE,
+      isAdmin: admin,
     });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });

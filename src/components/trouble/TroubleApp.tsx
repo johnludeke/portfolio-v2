@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { toJpeg } from "html-to-image";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,7 @@ type Data = {
   players: PublicPlayer[];
   actualFinalGoals: number | null;
   maxScore: number;
+  isAdmin: boolean;
 };
 type Auth = { username: string; password: string; playerId: string };
 
@@ -43,6 +45,8 @@ export default function TroubleApp() {
   const [finalGoals, setFinalGoals] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
+  const [exporting, setExporting] = useState(false);
+  const captureRef = useRef<HTMLDivElement>(null);
 
   const refetch = useCallback(async () => {
     try {
@@ -126,6 +130,33 @@ export default function TroubleApp() {
     }
   }
 
+  async function saveJpg(name: string) {
+    const node = captureRef.current;
+    if (!node) return;
+    setExporting(true);
+    try {
+      const dataUrl = await toJpeg(node, {
+        quality: 0.95,
+        pixelRatio: 2,
+        backgroundColor: "#ffffff",
+        style: { padding: "16px" },
+        cacheBust: true,
+        // Cross-origin crests that block CORS fall back to a transparent pixel
+        // instead of failing the whole export.
+        imagePlaceholder:
+          "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+      });
+      const link = document.createElement("a");
+      link.download = `${name.replace(/[^a-z0-9-_]+/gi, "_") || "bracket"}.jpg`;
+      link.href = dataUrl;
+      link.click();
+    } catch {
+      /* ignore export errors */
+    } finally {
+      setExporting(false);
+    }
+  }
+
   if (error) {
     return <Shell><p className="text-center text-sm text-red-600">{error}</p></Shell>;
   }
@@ -185,8 +216,15 @@ export default function TroubleApp() {
                     onChange={(e) => setBracketName(e.target.value)}
                     placeholder="name your bracket"
                   />
-                  <Bracket r32={data.r32} picks={picks} editable onPick={onPick} matches={data.matches} />
+                  <Bracket r32={data.r32} picks={picks} editable onPick={onPick} matches={data.matches} captureRef={captureRef} />
                   <div className="flex flex-wrap items-end gap-3">
+                    <Button
+                      variant="ghost"
+                      onClick={() => saveJpg(bracketName || me.username)}
+                      loading={exporting}
+                    >
+                      Save as JPG
+                    </Button>
                     <Input
                       label="Tiebreaker: total goals in the final"
                       type="number"
@@ -215,10 +253,20 @@ export default function TroubleApp() {
                 </>
               ) : (
                 <>
-                  <p className="text-sm font-semibold text-cBlack">
-                    {me.bracket_name || `${me.username}'s bracket`}
-                  </p>
-                  <Bracket r32={data.r32} picks={me.picks} matches={data.matches} />
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-sm font-semibold text-cBlack">
+                      {me.bracket_name || `${me.username}'s bracket`}
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => saveJpg(me.bracket_name || me.username)}
+                      loading={exporting}
+                    >
+                      Save as JPG
+                    </Button>
+                  </div>
+                  <Bracket r32={data.r32} picks={me.picks} matches={data.matches} captureRef={captureRef} />
                   {saveMsg && <p className="text-xs text-zinc-500">{saveMsg}</p>}
                 </>
               )}
@@ -234,11 +282,21 @@ export default function TroubleApp() {
               <button onClick={() => setViewing(null)} className="text-xs text-zinc-400 underline">
                 ← back to leaderboard
               </button>
-              <p className="text-sm font-semibold text-cBlack">
-                {viewing.bracket_name || `${viewing.username}'s bracket`}{" "}
-                <span className="text-zinc-400">· {viewing.score}/{data.maxScore}</span>
-              </p>
-              <Bracket r32={data.r32} picks={viewing.picks} matches={data.matches} />
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-semibold text-cBlack">
+                  {viewing.bracket_name || `${viewing.username}'s bracket`}{" "}
+                  <span className="text-zinc-400">· {viewing.score}/{data.maxScore}</span>
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => saveJpg(viewing.bracket_name || viewing.username)}
+                  loading={exporting}
+                >
+                  Save as JPG
+                </Button>
+              </div>
+              <Bracket r32={data.r32} picks={viewing.picks} matches={data.matches} captureRef={captureRef} />
             </div>
           ) : (
             <Leaderboard
@@ -251,7 +309,9 @@ export default function TroubleApp() {
         </>
       )}
 
-      <AdminPanel meta={data.meta} matches={data.matches} onChanged={refetch} />
+      {data.isAdmin && (
+        <AdminPanel meta={data.meta} matches={data.matches} onChanged={refetch} />
+      )}
     </Shell>
   );
 }
